@@ -60,4 +60,8 @@ public class MainViewModel extends ViewModel {
     public LiveData<Integer> getAzimuth() {
         return mAzimuth;
     }
+
+    public void findClicked(double lat, double lon) {
+
+    }
 }

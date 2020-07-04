@@ -42,4 +42,7 @@ dependencies {
 
     implementation 'com.jakewharton.timber:timber:4.7.1'
 
+    //ActivityResultCallback
+    implementation "androidx.fragment:fragment:1.3.0-alpha06"
+
 }
