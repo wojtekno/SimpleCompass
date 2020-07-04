@@ -1,8 +1,8 @@
 package com.nowak.wjw.simplecompass;
 
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.os.Bundle;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.nowak.wjw.simplecompass.ui.main.MainFragment;
 
@@ -15,6 +15,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         Timber.d("onCreate()");
         setContentView(R.layout.main_activity);
+
+        if (!((MyApplication) getApplication()).appContainer.hasRotationSensor()) {
+            //todo show message and don't allow to use the app
+        }
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.container, MainFragment.newInstance())

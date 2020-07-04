@@ -1,13 +1,15 @@
 package com.nowak.wjw.simplecompass;
 
 import android.app.Application;
-import android.util.Config;
 
+import com.nowak.wjw.simplecompass.di.AppContainer;
 import com.nowak.wjw.simplecompass.log.MyDebugTree;
 
 import timber.log.Timber;
 
 public class MyApplication extends Application {
+
+    public AppContainer appContainer;
 
     @Override
     public void onCreate() {
@@ -17,5 +19,7 @@ public class MyApplication extends Application {
             Timber.plant(new MyDebugTree());
             Timber.d("MyDebugTree planted");
         }
+
+        appContainer = new AppContainer(getApplicationContext());
     }
 }
