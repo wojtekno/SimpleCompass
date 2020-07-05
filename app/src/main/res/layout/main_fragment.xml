@@ -15,7 +15,46 @@
         android:id="@+id/main"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="@android:color/darker_gray"
         tools:context=".ui.main.MainFragment">
+
+        <ImageView
+            android:id="@+id/compass"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_simple_compass"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0" />
+
+        <ImageView
+            android:id="@+id/needle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:rotation="@{viewModel.needleRotation-45}"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_needle_3"
+            app:layout_constraintBottom_toBottomOf="@+id/compass"
+            app:layout_constraintEnd_toEndOf="@+id/compass"
+            app:layout_constraintStart_toStartOf="@+id/compass"
+            app:layout_constraintTop_toTopOf="@+id/compass" />
+
+        <ImageView
+            android:id="@+id/target_ic"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_baseline_arrow_drop_down_circle_24"
+            android:rotation="@{viewModel.destArrowRotation + 180.0f}"
+            android:translationX="@{viewModel.targetIcTranslationX}"
+            android:translationY="@{viewModel.targetIcTranslationY}"
+            app:layout_constraintBottom_toBottomOf="@+id/compass"
+            app:layout_constraintEnd_toEndOf="@+id/compass"
+            app:layout_constraintStart_toStartOf="@+id/compass"
+            app:layout_constraintTop_toTopOf="@+id/compass" />
+<!--        android:rotation="@{viewModel.destArrowRotation+180}"-->
+
 
         <ImageView
             android:id="@+id/compass_needle_iv"
@@ -45,10 +84,10 @@
             android:id="@+id/destination_bearing_tv"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:text="@{String.valueOf(viewModel.destinationBearing)}"
             app:layout_constraintEnd_toEndOf="@+id/destination_needle_iv"
             app:layout_constraintStart_toStartOf="@+id/destination_needle_iv"
-            app:layout_constraintTop_toBottomOf="@id/destination_needle_iv"
-            android:text="@{String.valueOf(viewModel.destinationBearing)}"/>
+            app:layout_constraintTop_toBottomOf="@id/destination_needle_iv" />
 
         <TextView
             android:id="@+id/azimuth_tv"

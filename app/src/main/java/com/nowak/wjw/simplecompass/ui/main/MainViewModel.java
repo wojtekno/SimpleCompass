@@ -10,6 +10,8 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Transformations;
 import androidx.lifecycle.ViewModel;
 
+import java.util.DuplicateFormatFlagsException;
+
 import timber.log.Timber;
 
 public class MainViewModel extends ViewModel {
@@ -17,6 +19,10 @@ public class MainViewModel extends ViewModel {
     private MutableLiveData<Location> mLocation = new MutableLiveData<>();
     private MutableLiveData<Location> mDestination = new MutableLiveData<>();
 
+    //     binding.destBearingIv.setTranslationX((float) (300 * Math.sin(Math.toRadians(i))));
+//            binding.destBearingIv.setTranslationY((float) (-300 * Math.cos(Math.toRadians(i))));
+    public LiveData<Float> targetIcTranslationX;
+    public LiveData<Float> targetIcTranslationY;
     public LiveData<Boolean> foundLastLocation;
     public LiveData<Integer> needleRotation;
     public LiveData<Float> destinationBearing;
@@ -36,6 +42,8 @@ public class MainViewModel extends ViewModel {
             return Transformations.map(needleRotation, r -> r + b);
         });
         foundLastLocation = Transformations.map(mLocation, l -> true);
+        targetIcTranslationX = Transformations.map(destArrowRotation, r -> (float)(300 * Math.sin(Math.toRadians(r))));
+        targetIcTranslationY = Transformations.map(destArrowRotation, r -> (float)(- 300 * Math.cos(Math.toRadians(r))));
     }
 
     public void onSensorChanged(SensorEvent event, int screenOrientation) {
@@ -85,12 +93,16 @@ public class MainViewModel extends ViewModel {
         return mAzimuth;
     }
 
-    public void findBtnClicked(double lat, double lon) {
+    public void findButtonClicked(String sLat, String sLong) {
+        Double latI = sLat.isEmpty() ? 0.0 : Double.parseDouble(sLat);
+        Double longI = sLong.isEmpty() ? 0.0 : Double.parseDouble(sLong);
+
         Location lDestination;
         lDestination = new Location("manually created special destination");
-        lDestination.setLatitude(lat);
-        lDestination.setLongitude(lon);
+        lDestination.setLatitude(latI);
+        lDestination.setLongitude(longI);
         mDestination.setValue(lDestination);
     }
+
 
 }
