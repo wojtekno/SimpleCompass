@@ -28,6 +28,28 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <ImageView
+            android:id="@+id/destination_needle_iv"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:rotation="@{viewModel.destArrowRotation}"
+            android:src="@drawable/ic_arrow"
+            app:layout_constraintBottom_toTopOf="@id/compass_needle_iv"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.733"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.439" />
+
+        <TextView
+            android:id="@+id/destination_bearing_tv"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintEnd_toEndOf="@+id/destination_needle_iv"
+            app:layout_constraintStart_toStartOf="@+id/destination_needle_iv"
+            app:layout_constraintTop_toBottomOf="@id/destination_needle_iv"
+            android:text="@{String.valueOf(viewModel.destinationBearing)}"/>
+
         <TextView
             android:id="@+id/azimuth_tv"
             android:layout_width="wrap_content"
@@ -61,24 +83,23 @@
             android:id="@+id/latitude_et"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
             android:ems="10"
             android:inputType="numberDecimal"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@id/longtidude_et"
-            app:layout_constraintStart_toStartOf="parent"
-            android:layout_marginHorizontal="16dp"
-            />
+            app:layout_constraintStart_toStartOf="parent" />
 
         <EditText
             android:id="@+id/longtidude_et"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginHorizontal="16dp"
             android:ems="10"
             android:inputType="numberDecimal"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/latitude_et"
-            android:layout_marginHorizontal="16dp"/>
+            app:layout_constraintStart_toEndOf="@+id/latitude_et" />
 
         <Button
             android:id="@+id/find_bt"
