@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">SimpleCompass</string>
+    <string name="location_access_required">We need to track your location to show your destination bearing</string>
+    <string name="location_access_denied">Location access denied, we cannot show your destination bearing</string>
+    <string name="ok_button">OK</string>
 </resources>

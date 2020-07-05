@@ -1,6 +1,5 @@
 package com.nowak.wjw.simplecompass.domain;
 
-import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.location.Location;
 import android.os.Looper;
@@ -19,7 +18,6 @@ import timber.log.Timber;
 public class LocationApiHandler extends LocationCallback {
     private MutableLiveData<Location> mLocation = new MutableLiveData<>();
     private FusedLocationProviderClient mFusedLocationClient;
-    private MutableLiveData<Boolean> foundLastLocation = new MutableLiveData<>();
     private LocationRequest mLocationRequest;
 
     public LocationApiHandler(FusedLocationProviderClient mFusedLocationProviderClient) {
@@ -36,8 +34,13 @@ public class LocationApiHandler extends LocationCallback {
         return mLocation;
     }
 
-    @SuppressLint("MissingPermission")
-    public void getLastLocation(Activity activity) {
+    /**
+     * Call requires permission which may be rejected by user:
+     * code should explicitly check to see if permission is available (with checkPermission) or explicitly handle a potential SecurityException
+     *
+     * @throws SecurityException
+     */
+    public void getLastLocation(Activity activity) throws SecurityException {
         mFusedLocationClient.getLastLocation()
                 .addOnSuccessListener(activity, new OnSuccessListener<Location>() {
                     @Override
@@ -46,16 +49,9 @@ public class LocationApiHandler extends LocationCallback {
                         // Got last known location. In some rare situations this can be null.
                         if (location != null) {
                             mLocation.setValue(location);
-                            foundLastLocation.setValue(true);
-//                            mViewModel.locationChanged(location);
-                            // Logic to handle location object
                         }
                     }
                 });
-    }
-
-    public LiveData<Boolean> getFoundLastLocation() {
-        return foundLastLocation;
     }
 
     private void createLocationRequest() {
@@ -65,14 +61,20 @@ public class LocationApiHandler extends LocationCallback {
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
     }
 
-    @SuppressLint("MissingPermission")
-    public void startLocationUpdates() {
-        Timber.d("startLocationUpdates()");
-        createLocationRequest();
-        mFusedLocationClient.requestLocationUpdates(mLocationRequest, this, Looper.getMainLooper());
-    }
-
     public void stopLocationUpdates() {
         mFusedLocationClient.removeLocationUpdates(this);
+    }
+
+    /**
+     * Call requires permission which may be rejected by user:
+     * code should explicitly check to see if permission is available (with checkPermission) or explicitly handle a potential SecurityException
+     *
+     * @throws SecurityException
+     */
+    public void requestLocationUpdates() throws SecurityException {
+        // TODO: implement SettingsClient
+        //  https://developers.google.com/android/reference/com/google/android/gms/location/SettingsClient
+        createLocationRequest();
+        mFusedLocationClient.requestLocationUpdates(mLocationRequest, this, Looper.getMainLooper());
     }
 }

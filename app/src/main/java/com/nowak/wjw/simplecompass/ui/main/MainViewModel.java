@@ -17,6 +17,7 @@ public class MainViewModel extends ViewModel {
     private MutableLiveData<Location> mLocation = new MutableLiveData<>();
     private MutableLiveData<Location> mDestination = new MutableLiveData<>();
 
+    public LiveData<Boolean> foundLastLocation;
     public LiveData<Integer> needleRotation;
     public LiveData<Float> destinationBearing;
     public LiveData<Float> destArrowRotation;
@@ -34,6 +35,7 @@ public class MainViewModel extends ViewModel {
         destArrowRotation = Transformations.switchMap(destinationBearing, b -> {
             return Transformations.map(needleRotation, r -> r + b);
         });
+        foundLastLocation = Transformations.map(mLocation, l -> true);
     }
 
     public void onSensorChanged(SensorEvent event, int screenOrientation) {
@@ -49,7 +51,7 @@ public class MainViewModel extends ViewModel {
     }
 
     public void locationChanged(Location location) {
-        Timber.d("locationChanged");
+//        Timber.d("locationChanged");
         if (mLocation.getValue() == null || location.getLatitude() != mLocation.getValue().getLatitude() || location.getLongitude() != mLocation.getValue().getLongitude())
             mLocation.setValue(location);
     }
@@ -83,7 +85,7 @@ public class MainViewModel extends ViewModel {
         return mAzimuth;
     }
 
-    public void findClicked(double lat, double lon) {
+    public void findBtnClicked(double lat, double lon) {
         Location lDestination;
         lDestination = new Location("manually created special destination");
         lDestination.setLatitude(lat);
