@@ -1,6 +1,7 @@
 package com.nowak.wjw.simplecompass.ui.main;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -10,6 +11,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -22,6 +24,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.gms.location.LocationServices;
 import com.google.android.material.snackbar.Snackbar;
+import com.nowak.wjw.simplecompass.CompassStateEnum;
 import com.nowak.wjw.simplecompass.MyApplication;
 import com.nowak.wjw.simplecompass.R;
 import com.nowak.wjw.simplecompass.databinding.MainFragmentBinding;
@@ -73,11 +76,29 @@ public class MainFragment extends Fragment implements SensorEventListener {
         AppContainer appContainer = ((MyApplication) requireActivity().getApplication()).appContainer;
         mViewModel = new ViewModelProvider(this).get(MainViewModel.class);
         mBinding.setViewModel(mViewModel);
-        mViewModel.foundLastLocation.observe(getViewLifecycleOwner(), is -> {
-            Timber.d("vm.foundLocation: %s", is);
-            foundLastLocation = is;
+        mViewModel.getmFoundLastLocation().observe(getViewLifecycleOwner(), is -> {
+            if (!is.getHasBeenHandled()) {
+                Timber.d("vm.foundLocation: %s", is.peekContent());
+                foundLastLocation = is.getContentIfNotHandled();
+            }
         });
         Timber.d("foundLastLocation  :%s", foundLastLocation);
+        mViewModel.hideKeyBoard.observe(getViewLifecycleOwner(), hide -> {
+            if (hide) {
+                hideKeyboard();
+            }
+        });
+
+        mViewModel.stopLocationUpdates().observe(getViewLifecycleOwner(), s -> {
+            Timber.d("stoplocationUpdates: %s", s);
+            if (s) stopLocationUpdates();
+        });
+
+        mViewModel.startLocationUpdates().observe(getViewLifecycleOwner(), s -> {
+            Timber.d("startlocationUpdates: %s", s);
+            if (s) requestLocationUpdates();
+        });
+
 
         //azimuth feature
         //todo find out scope of sensorManager
@@ -104,6 +125,11 @@ public class MainFragment extends Fragment implements SensorEventListener {
         });
 
         return mBinding.getRoot();
+    }
+
+    private void hideKeyboard() {
+        InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Activity.INPUT_METHOD_SERVICE);
+        imm.hideSoftInputFromWindow(getView().getRootView().getWindowToken(), 0);
     }
 
     private boolean checkPermissions() {
@@ -201,6 +227,7 @@ public class MainFragment extends Fragment implements SensorEventListener {
     }
 
     private void stopLocationUpdates() {
+        Timber.d("stopLocationUpdates");
         mLocationApiHandler.stopLocationUpdates();
     }
 

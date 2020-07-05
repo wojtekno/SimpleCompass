@@ -1,6 +1,5 @@
 package com.nowak.wjw.simplecompass.ui.main;
 
-import android.graphics.drawable.TransitionDrawable;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorManager;
@@ -11,8 +10,9 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Transformations;
 import androidx.lifecycle.ViewModel;
 
+import com.nowak.wjw.simplecompass.CompassStateEnum;
+import com.nowak.wjw.simplecompass.Event;
 import com.nowak.wjw.simplecompass.R;
-import com.nowak.wjw.simplecompass.StateEnum;
 
 import timber.log.Timber;
 
@@ -20,40 +20,36 @@ public class MainViewModel extends ViewModel {
     private MutableLiveData<Integer> mAzimuth = new MutableLiveData<>(0);
     private MutableLiveData<Location> mLocation = new MutableLiveData<>();
     private MutableLiveData<Location> mDestination = new MutableLiveData<>();
+    private MutableLiveData<Event<Boolean>> mFoundLastLocation = new MutableLiveData<>(new Event<>(false));
+    private LiveData<Float> mDestinationBearing;
+    private MutableLiveData<CompassStateEnum> mState = new MutableLiveData<>(CompassStateEnum.COMPASS_ONLY);
+    private MutableLiveData<Boolean> mStopLocationUpdates = new MutableLiveData<>(false);
+    private MutableLiveData<Boolean> mStartLocationUpdates = new MutableLiveData<>(false);
 
-    public LiveData<Boolean> foundLastLocation;
+
     public LiveData<Integer> needleRotation;
-    public LiveData<Float> destinationBearing;
     public LiveData<Float> destArrowRotation;
     public LiveData<Float> targetIcTranslationX;
     public LiveData<Float> targetIcTranslationY;
-    public LiveData<Boolean> targetIcVisibile;
-    public LiveData<Integer> buttonTextResId;// = new MutableLiveData<>(R.string.enter_coordinates_button);
+    public LiveData<Boolean> targetIcVisible;
+    public LiveData<Integer> buttonTextResId;
     public LiveData<Boolean> editTextVisible;
-
-    private MutableLiveData<StateEnum> mState = new MutableLiveData<>(StateEnum.COMPASS_ONLY);
+    public LiveData<Boolean> hideKeyBoard;
 
 
     public MainViewModel() {
         Timber.d("newInstance()");
         needleRotation = Transformations.map(mAzimuth, a -> -a);
-        destinationBearing = Transformations.switchMap(mLocation, l -> Transformations.map(mDestination, d -> {
-            float m = l.bearingTo(d);
-//            Timber.d("livebearing in constructor %s", m);
-            return m;
-        }));
-        destArrowRotation = Transformations.switchMap(destinationBearing, b -> {
-            return Transformations.map(needleRotation, r -> r + b);
-        });
-        foundLastLocation = Transformations.map(mLocation, l -> true);
+        mDestinationBearing = Transformations.switchMap(mLocation, l -> Transformations.map(mDestination, d -> l.bearingTo(d)));
+        destArrowRotation = Transformations.switchMap(mDestinationBearing, b -> Transformations.map(needleRotation, r -> r + b));
         targetIcTranslationX = Transformations.map(destArrowRotation, r -> (float) (300 * Math.sin(Math.toRadians(r))));
         targetIcTranslationY = Transformations.map(destArrowRotation, r -> (float) (-300 * Math.cos(Math.toRadians(r))));
-        targetIcVisibile = (MutableLiveData<Boolean>) Transformations.map(mState, s -> {
-            if (s == StateEnum.SHOW_DESTINATION_AZIMUTH) return true;
+        targetIcVisible = (MutableLiveData<Boolean>) Transformations.map(mState, s -> {
+            if (s == CompassStateEnum.SHOW_DESTINATION_AZIMUTH) return true;
             else return false;
         });
         editTextVisible = Transformations.map(mState, s -> {
-            if (s == StateEnum.EDIT_DESTINATION_LOCATION) return true;
+            if (s == CompassStateEnum.EDIT_DESTINATION_LOCATION) return true;
             else return false;
         });
         buttonTextResId = Transformations.map(mState, s -> {
@@ -67,6 +63,11 @@ public class MainViewModel extends ViewModel {
                 default:
                     throw new UnsupportedOperationException();
             }
+        });
+
+        hideKeyBoard = Transformations.map(mState, s -> {
+            if (s != CompassStateEnum.EDIT_DESTINATION_LOCATION) return true;
+            else return false;
         });
     }
 
@@ -88,9 +89,13 @@ public class MainViewModel extends ViewModel {
     }
 
     public void locationChanged(Location location) {
-//        Timber.d("locationChanged");
-        if (mLocation.getValue() == null || location.getLatitude() != mLocation.getValue().getLatitude() || location.getLongitude() != mLocation.getValue().getLongitude())
+        Timber.d("locationChanged");
+        if (mLocation.getValue() == null || location.getLatitude() != mLocation.getValue().getLatitude() || location.getLongitude() != mLocation.getValue().getLongitude()) {
             mLocation.setValue(location);
+        }
+        if (mFoundLastLocation.getValue().peekContent() == false) {
+            mFoundLastLocation.setValue(new Event<>(true));
+        }
     }
 
     public LiveData<Integer> getAzimuth() {
@@ -98,12 +103,12 @@ public class MainViewModel extends ViewModel {
     }
 
     public void findButtonClicked(String sLat, String sLong) {
-        StateEnum lState = mState.getValue();
-        if (lState == StateEnum.COMPASS_ONLY) {
-            mState.setValue(StateEnum.EDIT_DESTINATION_LOCATION);
+        CompassStateEnum lState = mState.getValue();
+        if (lState == CompassStateEnum.COMPASS_ONLY) {
+            mState.setValue(CompassStateEnum.EDIT_DESTINATION_LOCATION);
             return;
-        } else if (lState == StateEnum.EDIT_DESTINATION_LOCATION) {
-            mState.setValue(StateEnum.SHOW_DESTINATION_AZIMUTH);
+        } else if (lState == CompassStateEnum.EDIT_DESTINATION_LOCATION) {
+            mState.setValue(CompassStateEnum.SHOW_DESTINATION_AZIMUTH);
             Double latI = sLat.isEmpty() ? 0.0 : Double.parseDouble(sLat);
             Double longI = sLong.isEmpty() ? 0.0 : Double.parseDouble(sLong);
 
@@ -112,11 +117,27 @@ public class MainViewModel extends ViewModel {
             lDestination.setLatitude(latI);
             lDestination.setLongitude(longI);
             mDestination.setValue(lDestination);
-            mState.setValue(StateEnum.SHOW_DESTINATION_AZIMUTH);
-        } else if (lState == StateEnum.SHOW_DESTINATION_AZIMUTH) {
-            mState.setValue(StateEnum.COMPASS_ONLY);
+            mStartLocationUpdates.setValue(true);
+        } else if (lState == CompassStateEnum.SHOW_DESTINATION_AZIMUTH) {
+            mState.setValue(CompassStateEnum.COMPASS_ONLY);
+            mStopLocationUpdates.setValue(true);
         }
 
     }
 
+    public LiveData<CompassStateEnum> getState() {
+        return mState;
+    }
+
+    public LiveData<Event<Boolean>> getmFoundLastLocation() {
+        return mFoundLastLocation;
+    }
+
+    public LiveData<Boolean> stopLocationUpdates() {
+        return mStopLocationUpdates;
+    }
+
+    public LiveData<Boolean> startLocationUpdates() {
+        return mStartLocationUpdates;
+    }
 }
