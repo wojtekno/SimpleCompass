@@ -9,6 +9,7 @@
             name="viewModel"
             type="com.nowak.wjw.simplecompass.ui.main.MainViewModel" />
 
+        <import type="android.view.View" />
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -45,15 +46,15 @@
             android:id="@+id/target_ic"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:src="@drawable/ic_baseline_arrow_drop_down_circle_24"
             android:rotation="@{viewModel.destArrowRotation + 180.0f}"
+            android:src="@drawable/ic_baseline_arrow_drop_down_circle_24"
             android:translationX="@{viewModel.targetIcTranslationX}"
             android:translationY="@{viewModel.targetIcTranslationY}"
+            android:visibility="@{viewModel.targetIcVisibile?View.VISIBLE:View.GONE}"
             app:layout_constraintBottom_toBottomOf="@+id/compass"
             app:layout_constraintEnd_toEndOf="@+id/compass"
             app:layout_constraintStart_toStartOf="@+id/compass"
             app:layout_constraintTop_toTopOf="@+id/compass" />
-<!--        android:rotation="@{viewModel.destArrowRotation+180}"-->
 
 
         <ImageView
@@ -98,15 +99,15 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/compass_needle_iv" />
 
-        <TextView
-            android:id="@+id/compensation_tv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@{String.valueOf(viewModel.debugRotationAngle)}"
-            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-            app:layout_constraintEnd_toStartOf="@id/background_north_tv"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+        <!--        <TextView-->
+        <!--            android:id="@+id/compensation_tv"-->
+        <!--            android:layout_width="wrap_content"-->
+        <!--            android:layout_height="wrap_content"-->
+        <!--            android:text="@{String.valueOf(viewModel.debugRotationAngle)}"-->
+        <!--            android:textAppearance="@style/TextAppearance.AppCompat.Medium"-->
+        <!--            app:layout_constraintEnd_toStartOf="@id/background_north_tv"-->
+        <!--            app:layout_constraintStart_toStartOf="parent"-->
+        <!--            app:layout_constraintTop_toTopOf="parent" />-->
 
         <TextView
             android:id="@+id/background_north_tv"
@@ -121,29 +122,44 @@
         <EditText
             android:id="@+id/latitude_et"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="40dp"
             android:layout_marginHorizontal="16dp"
+            android:background="@drawable/edit_text_back"
+            android:backgroundTint="@android:color/white"
             android:ems="10"
+            android:gravity="center"
+            android:hint="@string/edit_text_latitude"
             android:inputType="numberDecimal"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:visibility="@{viewModel.editTextVisible?View.VISIBLE:View.GONE}"
+            app:layout_constraintBottom_toBottomOf="@+id/longtidude_et"
             app:layout_constraintEnd_toStartOf="@id/longtidude_et"
-            app:layout_constraintStart_toStartOf="parent" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/longtidude_et"
+            app:layout_constraintVertical_bias="0.0" />
 
         <EditText
             android:id="@+id/longtidude_et"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="40dp"
             android:layout_marginHorizontal="16dp"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/edit_text_back"
             android:ems="10"
+            android:gravity="center"
+            android:hint="@string/edit_text_longtitude"
             android:inputType="numberDecimal"
+            android:visibility="@{viewModel.editTextVisible?View.VISIBLE:View.GONE}"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@+id/latitude_et" />
 
         <Button
+
             android:id="@+id/find_bt"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginVertical="16dp"
+            android:text="@{viewModel.buttonTextResId}"
             app:layout_constraintBottom_toTopOf="@+id/longtidude_et"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent" />

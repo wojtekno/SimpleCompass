@@ -132,8 +132,6 @@ public class MainFragment extends Fragment implements SensorEventListener {
     }
 
     private void findButtonClicked() {
-//        double lat = Double.parseDouble(mBinding.latitudeEt.getText().toString());
-//        double lon = Double.parseDouble(mBinding.longtidudeEt.getText().toString());
         String latS = mBinding.latitudeEt.getText().toString();
         String logS = mBinding.longtidudeEt.getText().toString();
         mViewModel.findButtonClicked(latS, logS);
