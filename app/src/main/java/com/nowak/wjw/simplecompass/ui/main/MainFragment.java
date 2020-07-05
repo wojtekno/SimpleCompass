@@ -41,28 +41,26 @@ import timber.log.Timber;
 public class MainFragment extends Fragment implements SensorEventListener {
 
     private static final String REQUESTING_LOCATION_UPDATES_KEY = "location_updates";
+    private static final String FOUND_LAST_LOCATION_KEY = "found_last_location";
     private MainViewModel mViewModel;
     private MainFragmentBinding mBinding;
     private SensorManager mSensorManager;
     private Sensor mVectorRotationSensor;
     private FusedLocationProviderClient mFusedLocationClient;
-    private MutableLiveData<Location> mLocation = new MutableLiveData<>();
+    //    private MutableLiveData<Location> mLocation = new MutableLiveData<>();
     private LocationRequest mLocationRequest;
     private boolean isRequestingLocationUpdates;
-    private boolean mIsLocationRequestSetUp;
+    private boolean foundLastLocation;
     private LocationCallback mLocationCallback = new LocationCallback() {
         @Override
         public void onLocationResult(LocationResult locationResult) {
             if (locationResult == null) {
                 return;
             }
-            for (Location location : locationResult.getLocations()) {
-                // Update UI with location data
-                // ...
-                Timber.d("locationCallback onLocationResult");
-                // TODO
-                mViewModel.locationChanged(location);
-            }
+            // Update UI with location data
+            Timber.d("locationCallback onLocationResult");
+            // TODO
+            mViewModel.locationChanged(locationResult.getLastLocation());
         }
     };
 
@@ -100,6 +98,9 @@ public class MainFragment extends Fragment implements SensorEventListener {
         mBinding.setLifecycleOwner(getViewLifecycleOwner());
 
         updateValuesFromBundle(savedInstanceState);
+        Timber.d("isRequestingLocationUpdates  :%s", isRequestingLocationUpdates);
+        Timber.d("foundLastLocation  :%s", foundLastLocation);
+
 
         AppContainer appContainer = ((MyApplication) requireActivity().getApplication()).appContainer;
         mViewModel = new ViewModelProvider(this).get(MainViewModel.class);
@@ -114,37 +115,49 @@ public class MainFragment extends Fragment implements SensorEventListener {
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(getContext());
 
         mBinding.findBt.setOnClickListener((v) -> {
-            if (ContextCompat.checkSelfPermission(
-                    getContext(), Manifest.permission.ACCESS_FINE_LOCATION) ==
-                    PackageManager.PERMISSION_GRANTED) {
+            if (checkPermissions()) {
                 // You can use the API that requires the permission.
 //                performAction(...);
-                Timber.d("button clicked permission granted");
+                Timber.d("button clicked & permission had been granted");
                 isRequestingLocationUpdates = true;
-                if (!mIsLocationRequestSetUp) configureLocation();
+                if (!foundLastLocation) configureLocation();
                 findButtonClicked();
-            } else if (shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
-                //todo checkout permissionGroup.
-
-                // In an educational UI, explain to the user why your app requires this
-                // permission for a specific feature to behave as expected. In this UI,
-                // include a "cancel" or "no thanks" button that allows the user to
-                // continue using your app without granting the permission.
-                // TODO: show a snackBar
-                //  https://github.com/android/permissions-samples/tree/master/RuntimePermissionsBasic
-                Timber.d("button clicked shouldShowRequestPermissionRationale");
-
-                Toast.makeText(getContext(), "We need your permission to track your position", Toast.LENGTH_SHORT).show();
-//                showInContextUI(...);
             } else {
-                // You can directly ask for the permission.
-                // The registered ActivityResultCallback gets the result of this request.
-                requestPermissionLauncher.launch(
-                        Manifest.permission.ACCESS_FINE_LOCATION);
+                requestPermissions();
             }
         });
 
         return mBinding.getRoot();
+    }
+
+    private boolean checkPermissions() {
+        return ContextCompat.checkSelfPermission(
+                getContext(), Manifest.permission.ACCESS_FINE_LOCATION) ==
+                PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void requestPermissions() {
+        boolean shouldProvideRationale = shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION);
+
+        if (shouldProvideRationale) {
+            //todo checkout permissionGroup.
+
+            // In an educational UI, explain to the user why your app requires this
+            // permission for a specific feature to behave as expected. In this UI,
+            // include a "cancel" or "no thanks" button that allows the user to
+            // continue using your app without granting the permission.
+            // TODO: show a snackBar
+            //  https://github.com/android/permissions-samples/tree/master/RuntimePermissionsBasic
+            Timber.d("button clicked shouldShowRequestPermissionRationale");
+
+            Toast.makeText(getContext(), "We need your permission to track your position", Toast.LENGTH_SHORT).show();
+        } else {
+            // You can directly ask for the permission.
+            // The registered ActivityResultCallback gets the result of this request.
+            requestPermissionLauncher.launch(
+                    Manifest.permission.ACCESS_FINE_LOCATION);
+        }
+
     }
 
     private void findButtonClicked() {
@@ -176,6 +189,7 @@ public class MainFragment extends Fragment implements SensorEventListener {
     public void onSaveInstanceState(@NonNull Bundle outState) {
         outState.putBoolean(REQUESTING_LOCATION_UPDATES_KEY,
                 isRequestingLocationUpdates);
+        outState.putBoolean(FOUND_LAST_LOCATION_KEY, foundLastLocation);
         super.onSaveInstanceState(outState);
 
     }
@@ -209,9 +223,8 @@ public class MainFragment extends Fragment implements SensorEventListener {
 
     private void configureLocation() {
         Timber.d("configureLocationUpdates");
-//        getLastLocation();
+        getLastLocation();
         startLocationUpdates();
-        mIsLocationRequestSetUp = true;
     }
 
     @SuppressLint("MissingPermission")
@@ -223,7 +236,9 @@ public class MainFragment extends Fragment implements SensorEventListener {
                         Timber.d("getLastLocation onSuccess");
                         // Got last known location. In some rare situations this can be null.
                         if (location != null) {
-                            mLocation.setValue(location);
+//                            mLocation.setValue(location);
+                            foundLastLocation = true;
+                            mViewModel.locationChanged(location);
                             // Logic to handle location object
                         }
                     }

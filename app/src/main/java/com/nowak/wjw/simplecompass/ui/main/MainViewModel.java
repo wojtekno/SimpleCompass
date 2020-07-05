@@ -28,7 +28,7 @@ public class MainViewModel extends ViewModel {
         needleRotation = Transformations.map(mAzimuth, a -> -a);
         destinationBearing = Transformations.switchMap(mLocation, l -> Transformations.map(mDestination, d -> {
             float m = l.bearingTo(d);
-            Timber.d("livebearing in constructor %s", m);
+//            Timber.d("livebearing in constructor %s", m);
             return m;
         }));
         destArrowRotation = Transformations.switchMap(destinationBearing, b -> {
