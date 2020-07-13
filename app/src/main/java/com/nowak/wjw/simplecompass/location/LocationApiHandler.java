@@ -1,4 +1,4 @@
-package com.nowak.wjw.simplecompass.domain;
+package com.nowak.wjw.simplecompass.location;
 
 import android.app.Activity;
 import android.location.Location;
@@ -15,6 +15,7 @@ import com.google.android.gms.tasks.OnSuccessListener;
 
 import timber.log.Timber;
 
+//todo There’s no clear separation of architecture layer. You made a `domain` package, but inside are Android SDK dependencies.
 public class LocationApiHandler extends LocationCallback {
     private MutableLiveData<Location> mLocation = new MutableLiveData<>();
     private FusedLocationProviderClient mFusedLocationClient;

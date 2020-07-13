@@ -6,6 +6,7 @@ import android.hardware.SensorManager;
 
 import timber.log.Timber;
 
+@Deprecated
 public class AppContainer {
 
     public SensorManager mSensorManager;

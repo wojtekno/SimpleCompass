@@ -16,9 +16,6 @@ public class MainActivity extends AppCompatActivity {
         Timber.d("onCreate()");
         setContentView(R.layout.main_activity);
 
-        if (!((MyApplication) getApplication()).appContainer.hasRotationSensor()) {
-            //todo show message and don't allow to use the app
-        }
         if (savedInstanceState == null) {
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.container, MainFragment.newInstance())

@@ -2,10 +2,8 @@ package com.nowak.wjw.simplecompass.ui.main;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.pm.PackageManager;
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -24,22 +22,20 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.gms.location.LocationServices;
 import com.google.android.material.snackbar.Snackbar;
-import com.nowak.wjw.simplecompass.CompassStateEnum;
-import com.nowak.wjw.simplecompass.MyApplication;
 import com.nowak.wjw.simplecompass.R;
 import com.nowak.wjw.simplecompass.databinding.MainFragmentBinding;
-import com.nowak.wjw.simplecompass.di.AppContainer;
-import com.nowak.wjw.simplecompass.domain.LocationApiHandler;
+import com.nowak.wjw.simplecompass.location.LocationApiHandler;
+import com.nowak.wjw.simplecompass.sensors.SensorHandler;
 
 import timber.log.Timber;
 
-public class MainFragment extends Fragment implements SensorEventListener {
+//todo You implement `SensorEventListener` in `MainFragment` which couples code.
+public class MainFragment extends Fragment {
 
     private static final String REQUESTING_LOCATION_UPDATES_KEY = "location_updates";
     private MainViewModel mViewModel;
     private MainFragmentBinding mBinding;
-    private SensorManager mSensorManager;
-    private Sensor mVectorRotationSensor;
+    private SensorHandler mSensorHandler;
     private boolean foundLastLocation;
     private LocationApiHandler mLocationApiHandler;
     private boolean isRequestingLocationUpdates;
@@ -73,7 +69,6 @@ public class MainFragment extends Fragment implements SensorEventListener {
         updateValuesFromBundle(savedInstanceState);
         Timber.d("isRequestingLocationUpdates  :%s", isRequestingLocationUpdates);
 
-        AppContainer appContainer = ((MyApplication) requireActivity().getApplication()).appContainer;
         mViewModel = new ViewModelProvider(this).get(MainViewModel.class);
         mBinding.setViewModel(mViewModel);
         mViewModel.getmFoundLastLocation().observe(getViewLifecycleOwner(), is -> {
@@ -91,6 +86,8 @@ public class MainFragment extends Fragment implements SensorEventListener {
 
         mViewModel.stopLocationUpdates().observe(getViewLifecycleOwner(), s -> {
             Timber.d("stoplocationUpdates: %s", s);
+            //todo There are multiple constructs where inside some `LiveData` observer you have a single-branched conditional instruction.
+            // This code would greatly benefit from `filter()` method known from libraries like RxJava.
             if (s) stopLocationUpdates();
         });
 
@@ -102,10 +99,15 @@ public class MainFragment extends Fragment implements SensorEventListener {
 
         //azimuth feature
         //todo find out scope of sensorManager
-        mSensorManager = appContainer.mSensorManager;
-        mVectorRotationSensor = appContainer.mVectorRotationSensor;
+        mSensorHandler = new SensorHandler((SensorManager) requireActivity().getSystemService(Context.SENSOR_SERVICE));
+        mSensorHandler.getSensorEvent().observe(getViewLifecycleOwner(), event -> {
+            int mScreenRotation = requireActivity().getWindowManager().getDefaultDisplay().getRotation();
+            mViewModel.onSensorChanged(event, mScreenRotation);
+        });
+
 
         //location feature
+        // todo You tend to use `getContext()` which may lead to `NullPointerException`. The `requireContext()` method would provide a better insight into what happened in such case.
         mLocationApiHandler = new LocationApiHandler(LocationServices.getFusedLocationProviderClient(getContext()));
         mLocationApiHandler.getLocation().observe(getViewLifecycleOwner(), l -> {
 //            Timber.d("newlocation");
@@ -128,12 +130,14 @@ public class MainFragment extends Fragment implements SensorEventListener {
     }
 
     private void hideKeyboard() {
+        // todo You tend to use `getContext()` which may lead to `NullPointerException`. The `requireContext()` method would provide a better insight into what happened in such case.
         InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Activity.INPUT_METHOD_SERVICE);
         imm.hideSoftInputFromWindow(getView().getRootView().getWindowToken(), 0);
     }
 
     private boolean checkPermissions() {
         return ContextCompat.checkSelfPermission(
+                // todo You tend to use `getContext()` which may lead to `NullPointerException`. The `requireContext()` method would provide a better insight into what happened in such case.
                 getContext(), Manifest.permission.ACCESS_FINE_LOCATION) ==
                 PackageManager.PERMISSION_GRANTED;
     }
@@ -167,7 +171,7 @@ public class MainFragment extends Fragment implements SensorEventListener {
     public void onResume() {
         super.onResume();
         Timber.d("onResume()");
-        mSensorManager.registerListener(this, mVectorRotationSensor, SensorManager.SENSOR_DELAY_GAME);
+        mSensorHandler.registerListenerForVectorRotationSensor();
         if (isRequestingLocationUpdates) {
             requestLocationUpdates();
         }
@@ -177,7 +181,7 @@ public class MainFragment extends Fragment implements SensorEventListener {
     public void onPause() {
         super.onPause();
         Timber.d("onPause()");
-        mSensorManager.unregisterListener(this);
+        mSensorHandler.unregisterListenerForVectorRotationSensor();
         stopLocationUpdates();
     }
 
@@ -197,17 +201,6 @@ public class MainFragment extends Fragment implements SensorEventListener {
             isRequestingLocationUpdates = savedInstanceState.getBoolean(
                     REQUESTING_LOCATION_UPDATES_KEY);
         }
-    }
-
-    @Override
-    public void onSensorChanged(SensorEvent event) {
-        int mScreenRotation = requireActivity().getWindowManager().getDefaultDisplay().getRotation();
-        mViewModel.onSensorChanged(event, mScreenRotation);
-    }
-
-    @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
     }
 
     private void configureLocation() {
