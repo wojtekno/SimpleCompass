@@ -1,8 +1,5 @@
 package com.nowak.wjw.simplecompass.ui.main;
 
-import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorManager;
 import android.location.Location;
 
 import androidx.lifecycle.LiveData;
@@ -13,11 +10,15 @@ import androidx.lifecycle.ViewModel;
 import com.nowak.wjw.simplecompass.CompassStateEnum;
 import com.nowak.wjw.simplecompass.Event;
 import com.nowak.wjw.simplecompass.R;
+import com.nowak.wjw.simplecompass.domain.GetAzimuthUseCase;
+import com.nowak.wjw.simplecompass.domain.StartStopSensorListenerUseCase;
 
 import timber.log.Timber;
 
 public class MainViewModel extends ViewModel {
-    private MutableLiveData<Integer> mAzimuth = new MutableLiveData<>(0);
+    private StartStopSensorListenerUseCase mStartStopSensorListenerUseCase;
+    private LiveData<Integer> mAzimuth;
+
     private MutableLiveData<Location> mLocation = new MutableLiveData<>();
     private MutableLiveData<Location> mDestination = new MutableLiveData<>();
     private MutableLiveData<Event<Boolean>> mFoundLastLocation = new MutableLiveData<>(new Event<>(false));
@@ -35,11 +36,21 @@ public class MainViewModel extends ViewModel {
     public LiveData<Integer> buttonTextResId;
     public LiveData<Boolean> editTextVisible;
     public LiveData<Boolean> hideKeyBoard;
+    public LiveData<Boolean> needScreenOrientation;
+    private MutableLiveData<Integer> mScreenOrientation = new MutableLiveData<>(0);
 
+    public MainViewModel(GetAzimuthUseCase getAzimuthUseCase, StartStopSensorListenerUseCase startStopSensorListenerUseCase) {
+        Timber.d("MainViewModel::newInstance(GetAzimuthUseCase)");
+        mStartStopSensorListenerUseCase = startStopSensorListenerUseCase;
 
-    public MainViewModel() {
-        Timber.d("newInstance()");
-        needleRotation = Transformations.map(mAzimuth, a -> -a);
+        //azimuth feature
+        mAzimuth = getAzimuthUseCase.azimuth;
+        needScreenOrientation = Transformations.map(mAzimuth, a -> true);
+        needleRotation = Transformations.switchMap(mAzimuth, azimuth ->
+                Transformations.map(mScreenOrientation, o -> azimuth + (o * 90))
+        );
+
+        //rest
         mDestinationBearing = Transformations.switchMap(mLocation, l -> Transformations.map(mDestination, d -> l.bearingTo(d)));
         destArrowRotation = Transformations.switchMap(mDestinationBearing, b -> Transformations.map(needleRotation, r -> r + b));
         targetIcTranslationX = Transformations.map(destArrowRotation, r -> (float) (300 * Math.sin(Math.toRadians(r))));
@@ -71,23 +82,6 @@ public class MainViewModel extends ViewModel {
         });
     }
 
-
-    public void onSensorChanged(SensorEvent event, int screenOrientation) {
-        if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
-            float[] orientation = new float[3];
-            float[] rMat = new float[9];
-            // calculate th rotation matrix
-            SensorManager.getRotationMatrixFromVector(rMat, event.values);
-            if (screenOrientation < 0 || 3 < screenOrientation) {
-                throw new UnsupportedOperationException();
-            }
-            int compensationAngle = screenOrientation * 90;
-            // get the azimuth value (orientation[0]) in degree - adjusted by the screenOrientation
-            int lAzimuth = (int) (Math.toDegrees(SensorManager.getOrientation(rMat, orientation)[0]) + 360 + compensationAngle) % 360;
-            if (lAzimuth != mAzimuth.getValue()) mAzimuth.setValue(lAzimuth);
-        }
-    }
-
     public void locationChanged(Location location) {
         Timber.d("locationChanged");
         if (mLocation.getValue() == null || location.getLatitude() != mLocation.getValue().getLatitude() || location.getLongitude() != mLocation.getValue().getLongitude()) {
@@ -96,10 +90,6 @@ public class MainViewModel extends ViewModel {
         if (mFoundLastLocation.getValue().peekContent() == false) {
             mFoundLastLocation.setValue(new Event<>(true));
         }
-    }
-
-    public LiveData<Integer> getAzimuth() {
-        return mAzimuth;
     }
 
     public void findButtonClicked(String sLat, String sLong) {
@@ -140,4 +130,20 @@ public class MainViewModel extends ViewModel {
     public LiveData<Boolean> startLocationUpdates() {
         return mStartLocationUpdates;
     }
+
+    public void provideScreenRotation(int screenRotation) {
+        if (mScreenOrientation.getValue() != screenRotation) {
+            mScreenOrientation.setValue(screenRotation);
+        }
+    }
+
+    public void onResume() {
+        mStartStopSensorListenerUseCase.registerListenerForVectorRotationSensor();
+    }
+
+
+    public void onPause() {
+        mStartStopSensorListenerUseCase.unregisterListenerForVectorRotationSensor();
+    }
+
 }

@@ -1,8 +1,9 @@
 package com.nowak.wjw.simplecompass
 
-open class Event<out T>(private val content: T) {
+open class Event<out T>(private val content: T, hasBeenHandled: Boolean) {
+    constructor(content: T) : this(content, false)
 
-    var hasBeenHandled = false
+    var hasBeenHandled = hasBeenHandled
         private set // Allow external read but not write
 
     /**

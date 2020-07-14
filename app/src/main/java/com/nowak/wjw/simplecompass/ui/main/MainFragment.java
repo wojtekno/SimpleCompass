@@ -2,9 +2,7 @@ package com.nowak.wjw.simplecompass.ui.main;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.Context;
 import android.content.pm.PackageManager;
-import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -22,10 +20,10 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.gms.location.LocationServices;
 import com.google.android.material.snackbar.Snackbar;
+import com.nowak.wjw.simplecompass.MyApplication;
 import com.nowak.wjw.simplecompass.R;
 import com.nowak.wjw.simplecompass.databinding.MainFragmentBinding;
 import com.nowak.wjw.simplecompass.location.LocationApiHandler;
-import com.nowak.wjw.simplecompass.sensors.SensorHandler;
 
 import timber.log.Timber;
 
@@ -33,9 +31,8 @@ import timber.log.Timber;
 public class MainFragment extends Fragment {
 
     private static final String REQUESTING_LOCATION_UPDATES_KEY = "location_updates";
-    private MainViewModel mViewModel;
     private MainFragmentBinding mBinding;
-    private SensorHandler mSensorHandler;
+    private MainViewModel mViewModel;
     private boolean foundLastLocation;
     private LocationApiHandler mLocationApiHandler;
     private boolean isRequestingLocationUpdates;
@@ -68,9 +65,16 @@ public class MainFragment extends Fragment {
 
         updateValuesFromBundle(savedInstanceState);
         Timber.d("isRequestingLocationUpdates  :%s", isRequestingLocationUpdates);
-
-        mViewModel = new ViewModelProvider(this).get(MainViewModel.class);
+        MainViewModelFactory mainViewModelFactory = ((MyApplication) getActivity().getApplication()).appContainer.mainViewModelFactory();
+        mViewModel = new ViewModelProvider(this, mainViewModelFactory).get(MainViewModel.class);
         mBinding.setViewModel(mViewModel);
+        mViewModel.needScreenOrientation.observe(getViewLifecycleOwner(), isNeeded -> {
+            if (isNeeded) {
+                int mScreenRotation = requireActivity().getWindowManager().getDefaultDisplay().getRotation();
+                mViewModel.provideScreenRotation(mScreenRotation);
+            }
+        });
+
         mViewModel.getmFoundLastLocation().observe(getViewLifecycleOwner(), is -> {
             if (!is.getHasBeenHandled()) {
                 Timber.d("vm.foundLocation: %s", is.peekContent());
@@ -94,15 +98,6 @@ public class MainFragment extends Fragment {
         mViewModel.startLocationUpdates().observe(getViewLifecycleOwner(), s -> {
             Timber.d("startlocationUpdates: %s", s);
             if (s) requestLocationUpdates();
-        });
-
-
-        //azimuth feature
-        //todo find out scope of sensorManager
-        mSensorHandler = new SensorHandler((SensorManager) requireActivity().getSystemService(Context.SENSOR_SERVICE));
-        mSensorHandler.getSensorEvent().observe(getViewLifecycleOwner(), event -> {
-            int mScreenRotation = requireActivity().getWindowManager().getDefaultDisplay().getRotation();
-            mViewModel.onSensorChanged(event, mScreenRotation);
         });
 
 
@@ -171,7 +166,7 @@ public class MainFragment extends Fragment {
     public void onResume() {
         super.onResume();
         Timber.d("onResume()");
-        mSensorHandler.registerListenerForVectorRotationSensor();
+        mViewModel.onResume();
         if (isRequestingLocationUpdates) {
             requestLocationUpdates();
         }
@@ -181,7 +176,7 @@ public class MainFragment extends Fragment {
     public void onPause() {
         super.onPause();
         Timber.d("onPause()");
-        mSensorHandler.unregisterListenerForVectorRotationSensor();
+        mViewModel.onPause();
         stopLocationUpdates();
     }
 
