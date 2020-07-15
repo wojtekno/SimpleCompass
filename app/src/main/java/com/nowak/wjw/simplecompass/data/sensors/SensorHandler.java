@@ -1,4 +1,4 @@
-package com.nowak.wjw.simplecompass.sensors;
+package com.nowak.wjw.simplecompass.data.sensors;
 
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;

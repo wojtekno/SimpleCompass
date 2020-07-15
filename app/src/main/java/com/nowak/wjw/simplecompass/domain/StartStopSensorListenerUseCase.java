@@ -1,6 +1,6 @@
 package com.nowak.wjw.simplecompass.domain;
 
-import com.nowak.wjw.simplecompass.sensors.SensorHandler;
+import com.nowak.wjw.simplecompass.data.sensors.SensorHandler;
 
 public class StartStopSensorListenerUseCase {
 

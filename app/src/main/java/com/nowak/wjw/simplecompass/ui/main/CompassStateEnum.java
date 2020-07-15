@@ -1,4 +1,4 @@
-package com.nowak.wjw.simplecompass;
+package com.nowak.wjw.simplecompass.ui.main;
 
 public enum CompassStateEnum {
     COMPASS_ONLY,

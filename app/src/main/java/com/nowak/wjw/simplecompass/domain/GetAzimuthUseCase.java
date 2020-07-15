@@ -2,7 +2,7 @@ package com.nowak.wjw.simplecompass.domain;
 
 import androidx.lifecycle.LiveData;
 
-import com.nowak.wjw.simplecompass.Compass;
+import com.nowak.wjw.simplecompass.data.Compass;
 
 public class GetAzimuthUseCase {
 

@@ -18,34 +18,24 @@ import androidx.databinding.DataBindingUtil;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
-import com.google.android.gms.location.LocationServices;
 import com.google.android.material.snackbar.Snackbar;
 import com.nowak.wjw.simplecompass.MyApplication;
 import com.nowak.wjw.simplecompass.R;
 import com.nowak.wjw.simplecompass.databinding.MainFragmentBinding;
-import com.nowak.wjw.simplecompass.location.LocationApiHandler;
 
 import timber.log.Timber;
 
-//todo You implement `SensorEventListener` in `MainFragment` which couples code.
 public class MainFragment extends Fragment {
 
-    private static final String REQUESTING_LOCATION_UPDATES_KEY = "location_updates";
     private MainFragmentBinding mBinding;
     private MainViewModel mViewModel;
-    private boolean foundLastLocation;
-    private LocationApiHandler mLocationApiHandler;
-    private boolean isRequestingLocationUpdates;
-
     private ActivityResultLauncher<String> requestPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
                 if (isGranted) {
                     Timber.d("RequestPermission granted");
-                    isRequestingLocationUpdates = true;
-                    findButtonClicked();
+                    btnClickAllowed();
                 } else {
                     Timber.d("RequestPermission NOT granted");
-                    isRequestingLocationUpdates = false;
                     Snackbar.make(mBinding.main, R.string.location_access_denied,
                             Snackbar.LENGTH_LONG).show();
                 }
@@ -64,7 +54,6 @@ public class MainFragment extends Fragment {
         mBinding.setLifecycleOwner(getViewLifecycleOwner());
 
         updateValuesFromBundle(savedInstanceState);
-        Timber.d("isRequestingLocationUpdates  :%s", isRequestingLocationUpdates);
         MainViewModelFactory mainViewModelFactory = ((MyApplication) getActivity().getApplication()).appContainer.mainViewModelFactory();
         mViewModel = new ViewModelProvider(this, mainViewModelFactory).get(MainViewModel.class);
         mBinding.setViewModel(mViewModel);
@@ -75,47 +64,16 @@ public class MainFragment extends Fragment {
             }
         });
 
-        mViewModel.getmFoundLastLocation().observe(getViewLifecycleOwner(), is -> {
-            if (!is.getHasBeenHandled()) {
-                Timber.d("vm.foundLocation: %s", is.peekContent());
-                foundLastLocation = is.getContentIfNotHandled();
-            }
-        });
-        Timber.d("foundLastLocation  :%s", foundLastLocation);
         mViewModel.hideKeyBoard.observe(getViewLifecycleOwner(), hide -> {
             if (hide) {
                 hideKeyboard();
             }
         });
 
-        mViewModel.stopLocationUpdates().observe(getViewLifecycleOwner(), s -> {
-            Timber.d("stoplocationUpdates: %s", s);
-            //todo There are multiple constructs where inside some `LiveData` observer you have a single-branched conditional instruction.
-            // This code would greatly benefit from `filter()` method known from libraries like RxJava.
-            if (s) stopLocationUpdates();
-        });
-
-        mViewModel.startLocationUpdates().observe(getViewLifecycleOwner(), s -> {
-            Timber.d("startlocationUpdates: %s", s);
-            if (s) requestLocationUpdates();
-        });
-
-
-        //location feature
-        // todo You tend to use `getContext()` which may lead to `NullPointerException`. The `requireContext()` method would provide a better insight into what happened in such case.
-        mLocationApiHandler = new LocationApiHandler(LocationServices.getFusedLocationProviderClient(getContext()));
-        mLocationApiHandler.getLocation().observe(getViewLifecycleOwner(), l -> {
-//            Timber.d("newlocation");
-            mViewModel.locationChanged(l);
-        });
-
-
         mBinding.findBt.setOnClickListener((v) -> {
             if (checkPermissions()) {
                 Timber.d("button clicked & permission had been granted");
-                isRequestingLocationUpdates = true;
-                if (!foundLastLocation) configureLocation();
-                findButtonClicked();
+                btnClickAllowed();
             } else {
                 requestPermissions();
             }
@@ -150,13 +108,12 @@ public class MainFragment extends Fragment {
                 }
             }).show();
         } else {
-            requestPermissionLauncher.launch(
-                    Manifest.permission.ACCESS_FINE_LOCATION);
+            requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
         }
 
     }
 
-    private void findButtonClicked() {
+    private void btnClickAllowed() {
         String latS = mBinding.latitudeEt.getText().toString();
         String logS = mBinding.longtidudeEt.getText().toString();
         mViewModel.findButtonClicked(latS, logS);
@@ -167,9 +124,6 @@ public class MainFragment extends Fragment {
         super.onResume();
         Timber.d("onResume()");
         mViewModel.onResume();
-        if (isRequestingLocationUpdates) {
-            requestLocationUpdates();
-        }
     }
 
     @Override
@@ -177,46 +131,18 @@ public class MainFragment extends Fragment {
         super.onPause();
         Timber.d("onPause()");
         mViewModel.onPause();
-        stopLocationUpdates();
     }
 
     @Override
     public void onSaveInstanceState(@NonNull Bundle outState) {
-        outState.putBoolean(REQUESTING_LOCATION_UPDATES_KEY,
-                isRequestingLocationUpdates);
+//        outState.putBoolean(REQUESTING_LOCATION_UPDATES_KEY, isRequestingLocationUpdates);
         super.onSaveInstanceState(outState);
-
     }
 
     private void updateValuesFromBundle(Bundle savedInstanceState) {
         if (savedInstanceState == null) {
             return;
         }
-        if (savedInstanceState.keySet().contains(REQUESTING_LOCATION_UPDATES_KEY)) {
-            isRequestingLocationUpdates = savedInstanceState.getBoolean(
-                    REQUESTING_LOCATION_UPDATES_KEY);
-        }
-    }
-
-    private void configureLocation() {
-        Timber.d("configureLocationUpdates");
-        getLastLocation();
-        requestLocationUpdates();
-    }
-
-    private void getLastLocation() {
-        Timber.d("getLastLocation");
-        mLocationApiHandler.getLastLocation(requireActivity());
-    }
-
-    private void requestLocationUpdates() {
-        Timber.d("startLocationUpdates()");
-        mLocationApiHandler.requestLocationUpdates();
-    }
-
-    private void stopLocationUpdates() {
-        Timber.d("stopLocationUpdates");
-        mLocationApiHandler.stopLocationUpdates();
     }
 
 

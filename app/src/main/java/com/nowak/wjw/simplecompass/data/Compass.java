@@ -1,4 +1,4 @@
-package com.nowak.wjw.simplecompass;
+package com.nowak.wjw.simplecompass.data;
 
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -7,7 +7,7 @@ import android.hardware.SensorManager;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Transformations;
 
-import com.nowak.wjw.simplecompass.sensors.SensorHandler;
+import com.nowak.wjw.simplecompass.data.sensors.SensorHandler;
 
 public class Compass {
 

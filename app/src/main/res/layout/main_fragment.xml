@@ -19,6 +19,21 @@
         android:background="@android:color/darker_gray"
         tools:context=".ui.main.MainFragment">
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/black"
+            android:gravity="center"
+            android:paddingVertical="8dp"
+            android:text="@string/error_cannot_establish_last_location"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            android:textColor="@android:color/white"
+            android:visibility="@{viewModel.showLocationError?View.VISIBLE:View.GONE}"
+            tools:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
         <ImageView
             android:id="@+id/compass"
             android:layout_width="match_parent"
@@ -84,7 +99,7 @@
             android:background="@drawable/edit_text_back"
             android:ems="10"
             android:gravity="center"
-            android:hint="@string/edit_text_longtitude"
+            android:hint="@string/edit_text_longitude"
             android:inputType="numberDecimal"
             android:visibility="@{viewModel.editTextVisible?View.VISIBLE:View.GONE}"
             app:layout_constraintBottom_toBottomOf="parent"
