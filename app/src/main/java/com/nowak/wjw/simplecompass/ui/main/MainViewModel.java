@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Transformations;
 import androidx.lifecycle.ViewModel;
 
+import com.nowak.wjw.simplecompass.Event;
 import com.nowak.wjw.simplecompass.R;
 import com.nowak.wjw.simplecompass.data.LocationCoordinates;
 import com.nowak.wjw.simplecompass.domain.GetAzimuthUseCase;
@@ -38,6 +39,13 @@ public class MainViewModel extends ViewModel {
     public LiveData<Boolean> editTextVisible;
     public LiveData<Boolean> hideKeyBoard;
     public LiveData<Boolean> showLocationError;
+    private MutableLiveData<Boolean> mShouldProvideRationale = new MutableLiveData<>(false);
+    public LiveData<Event<Boolean>> shouldProvideRationale = Transformations.map(mShouldProvideRationale, should -> new Event(should));
+    private MutableLiveData<Boolean> mShowPermissionDenied = new MutableLiveData<>(false);
+    public LiveData<Event<Boolean>> showPermissionDenied = Transformations.map(mShowPermissionDenied, show -> new Event<>(show));
+    private MutableLiveData<Boolean> mRequestLocationPermission = new MutableLiveData<>(false);
+    public LiveData<Event<Boolean>> requestLocationPermission = Transformations.map(mRequestLocationPermission, request -> new Event<>(request));
+
 
     public MainViewModel(GetAzimuthUseCase getAzimuthUseCase, StartStopSensorListenerUseCase startStopSensorListenerUseCase, InitiateLastLocationUseCase initiateLastLocationUseCase, RequestAndStopLocationUpdatesUseCase requestAndStopLocationUpdatesUseCase, GetDestinationBearingUseCase getDestinationBearingUseCase) {
         Timber.d("MainViewModel::newInstance(GetAzimuthUseCase)");
@@ -47,8 +55,10 @@ public class MainViewModel extends ViewModel {
         mAzimuth = getAzimuthUseCase.azimuth;
         needScreenOrientation = Transformations.map(mAzimuth, a -> true);
 //        todo fix needle rotation - angle miscalculated
-        needleRotation = Transformations.switchMap(mAzimuth, azimuth ->
-                Transformations.map(mScreenOrientation, o -> azimuth + (o * 90))
+        needleRotation = Transformations.switchMap(mAzimuth, azimuth -> {
+                    Timber.d("needle rotation and azimuth: %s ", azimuth);
+                    return Transformations.map(mScreenOrientation, o -> azimuth + (o * 90));
+                }
         );
 
         //Location feature
@@ -94,7 +104,6 @@ public class MainViewModel extends ViewModel {
         });
 
 
-
         showLocationError = Transformations.switchMap(mState, state -> {
             if (CompassStateEnum.SHOW_DESTINATION_AZIMUTH == state) {
                 return Transformations.map(mDestinationBearing, bearing -> {
@@ -130,6 +139,7 @@ public class MainViewModel extends ViewModel {
 
 
     public void findButtonClicked(String sLat, String sLon) {
+        Timber.d ("find button clicked");
         CompassStateEnum lState = mState.getValue();
         if (lState == CompassStateEnum.COMPASS_ONLY) {
             mState.setValue(CompassStateEnum.EDIT_DESTINATION_LOCATION);
@@ -185,4 +195,19 @@ public class MainViewModel extends ViewModel {
         requestLocationUpdates();
     }
 
+    public void newButtonClicked(boolean permissionGranted, boolean shouldProvideRationale, String sLat, String sLon) {
+        if (permissionGranted) findButtonClicked(sLat, sLon);
+        else if (shouldProvideRationale) mShouldProvideRationale.setValue(true);
+        else mRequestLocationPermission.setValue(true);
+
+    }
+
+    public void onRequestPermissionCallback(Boolean isGranted, String sLat, String sLog) {
+        if (isGranted) {
+            findButtonClicked(sLat, sLog);
+        } else {
+            mShowPermissionDenied.setValue(true);
+        }
+
+    }
 }
