@@ -4,32 +4,26 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorManager;
 
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.Transformations;
-
 import com.nowak.wjw.simplecompass.data.sensors.SensorHandler;
+
+import io.reactivex.rxjava3.core.Observable;
 
 public class Compass {
 
-    private LiveData<Integer> mAzimuth;
+    public Observable<Integer> integerObservable;
 
     public Compass(SensorHandler sensorHandler) {
-        mAzimuth = Transformations.map(sensorHandler.getSensorEvent(), this::countAzimuth);
-    }
-
-    public LiveData<Integer> getAzimuth() {
-        return mAzimuth;
+        integerObservable = sensorHandler.mEventObservable
+                .filter(sensorEvent -> sensorEvent.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR)
+                .map(sensorEvent -> countAzimuth(sensorEvent));
     }
 
     private Integer countAzimuth(SensorEvent event) {
-        if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
-            float[] orientation = new float[3];
-            float[] rMat = new float[9];
-            // calculate th rotation matrix
-            SensorManager.getRotationMatrixFromVector(rMat, event.values);
-            int lAzimuth = (int) (Math.toDegrees(SensorManager.getOrientation(rMat, orientation)[0]) + 360) % 360;
-            return lAzimuth;
-        }
-        return mAzimuth.getValue();
+        float[] orientation = new float[3];
+        float[] rMat = new float[9];
+        // calculate th rotation matrix
+        SensorManager.getRotationMatrixFromVector(rMat, event.values);
+        int lAzimuth = (int) (Math.toDegrees(SensorManager.getOrientation(rMat, orientation)[0]) + 360) % 360;
+        return lAzimuth;
     }
 }

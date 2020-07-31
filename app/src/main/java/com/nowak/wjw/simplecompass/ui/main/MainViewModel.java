@@ -1,6 +1,7 @@
 package com.nowak.wjw.simplecompass.ui.main;
 
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.LiveDataReactiveStreams;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Transformations;
 import androidx.lifecycle.ViewModel;
@@ -14,6 +15,7 @@ import com.nowak.wjw.simplecompass.domain.InitiateLastLocationUseCase;
 import com.nowak.wjw.simplecompass.domain.RequestAndStopLocationUpdatesUseCase;
 import com.nowak.wjw.simplecompass.domain.StartStopSensorListenerUseCase;
 
+import io.reactivex.rxjava3.core.BackpressureStrategy;
 import timber.log.Timber;
 
 public class MainViewModel extends ViewModel {
@@ -52,7 +54,18 @@ public class MainViewModel extends ViewModel {
 
         //azimuth feature
         mStartStopSensorListenerUseCase = startStopSensorListenerUseCase;
-        mAzimuth = getAzimuthUseCase.azimuth;
+//        mAzimuth = getAzimuthUseCase.azimuth;
+        mAzimuth = LiveDataReactiveStreams.fromPublisher(getAzimuthUseCase.obsAzimuth
+                .toFlowable(BackpressureStrategy.BUFFER)
+                .filter(integer -> {
+                    if (mAzimuth.getValue() == null) return true;
+                    int cA = mAzimuth.getValue();
+                    if (Math.abs(cA - integer) > 0) {
+                        return true;
+                    }
+                    return false;
+                })
+        );
         needScreenOrientation = Transformations.map(mAzimuth, a -> true);
 //        todo fix needle rotation - angle miscalculated
         needleRotation = Transformations.switchMap(mAzimuth, azimuth -> {
@@ -139,7 +152,7 @@ public class MainViewModel extends ViewModel {
 
 
     public void findButtonClicked(String sLat, String sLon) {
-        Timber.d ("find button clicked");
+        Timber.d("find button clicked");
         CompassStateEnum lState = mState.getValue();
         if (lState == CompassStateEnum.COMPASS_ONLY) {
             mState.setValue(CompassStateEnum.EDIT_DESTINATION_LOCATION);

@@ -5,14 +5,23 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.MutableLiveData;
+import java.util.concurrent.TimeUnit;
+
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.reactivex.rxjava3.subjects.BehaviorSubject;
 
 public class SensorHandler implements SensorEventListener {
 
     private SensorManager mSensorManager;
     private Sensor mVectorRotationSensor;
-    private MutableLiveData<SensorEvent> mSensorEvent = new MutableLiveData<>();
+    private BehaviorSubject<SensorEvent> eventProxy = BehaviorSubject.create();
+    //todo Q - is it public, private and expose a method, or just a method returning Observable?
+    public Observable<SensorEvent> mEventObservable = Observable
+            .interval(40, TimeUnit.MILLISECONDS) // 25 frames/second
+            .filter(aLong -> eventProxy.getValue() != null)
+            .map(aLong -> eventProxy.getValue())
+            .subscribeOn(Schedulers.io());
 
 
     public SensorHandler(SensorManager sensorManager) {
@@ -33,14 +42,11 @@ public class SensorHandler implements SensorEventListener {
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        mSensorEvent.setValue(event);
+//        Timber.d("sensor changed");
+        eventProxy.onNext(event);
     }
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
-    }
-
-    public LiveData<SensorEvent> getSensorEvent() {
-        return mSensorEvent;
     }
 }
