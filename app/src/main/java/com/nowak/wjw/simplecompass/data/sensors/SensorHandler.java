@@ -18,7 +18,7 @@ public class SensorHandler implements SensorEventListener {
     private BehaviorSubject<SensorEvent> eventProxy = BehaviorSubject.create();
     //todo Q - is it public, private and expose a method, or just a method returning Observable?
     public Observable<SensorEvent> mEventObservable = Observable
-            .interval(40, TimeUnit.MILLISECONDS) // 25 frames/second
+            .interval(40, TimeUnit.MILLISECONDS)
             .filter(aLong -> eventProxy.getValue() != null)
             .map(aLong -> eventProxy.getValue())
             .subscribeOn(Schedulers.io());
@@ -42,7 +42,6 @@ public class SensorHandler implements SensorEventListener {
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-//        Timber.d("sensor changed");
         eventProxy.onNext(event);
     }
 

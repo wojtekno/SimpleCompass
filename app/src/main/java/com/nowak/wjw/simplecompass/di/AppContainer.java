@@ -9,7 +9,7 @@ import com.nowak.wjw.simplecompass.domain.GetAzimuthUseCase;
 import com.nowak.wjw.simplecompass.domain.GetDestinationBearingUseCase;
 import com.nowak.wjw.simplecompass.domain.InitiateLastLocationUseCase;
 import com.nowak.wjw.simplecompass.domain.RequestAndStopLocationUpdatesUseCase;
-import com.nowak.wjw.simplecompass.domain.StartStopSensorListenerUseCase;
+import com.nowak.wjw.simplecompass.domain.ManageSensorListenerUseCase;
 import com.nowak.wjw.simplecompass.data.location.LocationApiHandler;
 import com.nowak.wjw.simplecompass.data.sensors.SensorHandler;
 import com.nowak.wjw.simplecompass.ui.main.MainViewModelFactory;
@@ -34,8 +34,8 @@ public class AppContainer {
         return new GetAzimuthUseCase(compass());
     }
 
-    private StartStopSensorListenerUseCase startStopSensorListenerUseCase() {
-        return new StartStopSensorListenerUseCase(mSensorHandler);
+    private ManageSensorListenerUseCase startStopSensorListenerUseCase() {
+        return new ManageSensorListenerUseCase(mSensorHandler);
     }
 
     private InitiateLastLocationUseCase initiateLastLocationUseCase() {

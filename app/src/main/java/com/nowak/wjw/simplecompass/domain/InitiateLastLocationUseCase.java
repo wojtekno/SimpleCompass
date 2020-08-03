@@ -11,7 +11,7 @@ public class InitiateLastLocationUseCase {
         mLocationApiHandler = locationApiHandler;
     }
 
-    public void initiateLastLocation() {
+    public void initiateLastLocation(boolean passedPermission) {
         Timber.d("initiateLastLocation()");
         mLocationApiHandler.initiateLastLocation();
     }

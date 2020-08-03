@@ -15,7 +15,7 @@ public class Compass {
     public Compass(SensorHandler sensorHandler) {
         integerObservable = sensorHandler.mEventObservable
                 .filter(sensorEvent -> sensorEvent.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR)
-                .map(sensorEvent -> countAzimuth(sensorEvent));
+                .map(this::countAzimuth);
     }
 
     private Integer countAzimuth(SensorEvent event) {

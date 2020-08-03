@@ -12,16 +12,17 @@ import com.nowak.wjw.simplecompass.data.LocationCoordinates;
 import com.nowak.wjw.simplecompass.domain.GetAzimuthUseCase;
 import com.nowak.wjw.simplecompass.domain.GetDestinationBearingUseCase;
 import com.nowak.wjw.simplecompass.domain.InitiateLastLocationUseCase;
+import com.nowak.wjw.simplecompass.domain.ManageSensorListenerUseCase;
 import com.nowak.wjw.simplecompass.domain.RequestAndStopLocationUpdatesUseCase;
-import com.nowak.wjw.simplecompass.domain.StartStopSensorListenerUseCase;
 
 import io.reactivex.rxjava3.core.BackpressureStrategy;
 import timber.log.Timber;
 
 public class MainViewModel extends ViewModel {
-    private StartStopSensorListenerUseCase mStartStopSensorListenerUseCase;
+    private ManageSensorListenerUseCase mManageSensorListenerUseCase;
     private InitiateLastLocationUseCase mInitiateLastLocationUseCase;
     private RequestAndStopLocationUpdatesUseCase mRequestAndStopLocationUpdatesUseCase;
+//    private GetDestinationBearingUseCase mGetDestinationBearingUseCase;
     private MutableLiveData<CompassStateEnum> mState = new MutableLiveData<>(CompassStateEnum.COMPASS_ONLY);
     private MutableLiveData<Integer> mScreenOrientation = new MutableLiveData<>(0);
     private LiveData<Integer> mAzimuth;
@@ -49,11 +50,11 @@ public class MainViewModel extends ViewModel {
     public LiveData<Event<Boolean>> requestLocationPermission = Transformations.map(mRequestLocationPermission, request -> new Event<>(request));
 
 
-    public MainViewModel(GetAzimuthUseCase getAzimuthUseCase, StartStopSensorListenerUseCase startStopSensorListenerUseCase, InitiateLastLocationUseCase initiateLastLocationUseCase, RequestAndStopLocationUpdatesUseCase requestAndStopLocationUpdatesUseCase, GetDestinationBearingUseCase getDestinationBearingUseCase) {
+    public MainViewModel(GetAzimuthUseCase getAzimuthUseCase, ManageSensorListenerUseCase manageSensorListenerUseCase, InitiateLastLocationUseCase initiateLastLocationUseCase, RequestAndStopLocationUpdatesUseCase requestAndStopLocationUpdatesUseCase, GetDestinationBearingUseCase getDestinationBearingUseCase) {
         Timber.d("MainViewModel::newInstance(GetAzimuthUseCase)");
 
         //azimuth feature
-        mStartStopSensorListenerUseCase = startStopSensorListenerUseCase;
+        mManageSensorListenerUseCase = manageSensorListenerUseCase;
 //        mAzimuth = getAzimuthUseCase.azimuth;
         mAzimuth = LiveDataReactiveStreams.fromPublisher(getAzimuthUseCase.obsAzimuth
                 .toFlowable(BackpressureStrategy.BUFFER)
@@ -77,11 +78,20 @@ public class MainViewModel extends ViewModel {
         //Location feature
         mInitiateLastLocationUseCase = initiateLastLocationUseCase;
         mRequestAndStopLocationUpdatesUseCase = requestAndStopLocationUpdatesUseCase;
+
 //        mGetDestinationBearingUseCase = getDestinationBearingUseCase;
-        mDestinationBearing = Transformations.switchMap(mDestinationCoordinates, c -> {
-            if (c == null) return null;
-            Timber.d("Transformations.switchMap(mDestinationCoordinates");
-            return getDestinationBearingUseCase.getMyDestinationBearing(c);
+//        mDestinationBearing = Transformations.switchMap(mDestinationCoordinates, c -> {
+//            if (c == null) return null;
+//            Timber.d("Transformations.switchMap(mDestinationCoordinates");
+//            return getDestinationBearingUseCase.getMyDestinationBearing(c);
+//        });
+
+        mDestinationBearing = Transformations.switchMap(mDestinationCoordinates, dest -> {
+            if (dest == null) return null;
+            return LiveDataReactiveStreams.fromPublisher(getDestinationBearingUseCase.getBearingObservable(dest).toFlowable(BackpressureStrategy.BUFFER).filter(aFloat -> {
+                Timber.d("subject bearing %s ", aFloat);
+                return true;
+            }));
         });
 
         setUpViewsStates();
@@ -151,21 +161,21 @@ public class MainViewModel extends ViewModel {
     }
 
 
-    public void findButtonClicked(String sLat, String sLon) {
-        Timber.d("find button clicked");
+    public void findButtonClicked(boolean passedPermission, String sLat, String sLon) {
         CompassStateEnum lState = mState.getValue();
+        Timber.d("%s button clicked", lState);
         if (lState == CompassStateEnum.COMPASS_ONLY) {
             mState.setValue(CompassStateEnum.EDIT_DESTINATION_LOCATION);
             return;
         } else if (lState == CompassStateEnum.EDIT_DESTINATION_LOCATION) {
             mState.setValue(CompassStateEnum.SHOW_DESTINATION_AZIMUTH);
-            initiateAndKeepUpdatingLocation();
+            initiateAndKeepUpdatingLocation(passedPermission);
             Double dLat = sLat.isEmpty() ? 0.0 : Double.parseDouble(sLat);
             Double dLon = sLon.isEmpty() ? 0.0 : Double.parseDouble(sLon);
             mDestinationCoordinates.setValue(new LocationCoordinates(dLat, dLon));
         } else if (lState == CompassStateEnum.SHOW_DESTINATION_AZIMUTH) {
             mState.setValue(CompassStateEnum.COMPASS_ONLY);
-            mDestinationCoordinates.setValue(null);
+//            mDestinationCoordinates.setValue(null);
             stopLocationUpdates();
         }
 
@@ -177,24 +187,24 @@ public class MainViewModel extends ViewModel {
         }
     }
 
-    public void onResume() {
-        mStartStopSensorListenerUseCase.registerListenerForVectorRotationSensor();
+    public void onResume(boolean passedPermission) {
+        mManageSensorListenerUseCase.registerListenerForVectorRotationSensor();
         if (hasLocationRequestsPermission && isRequestingLocationUpdates) {
-            requestLocationUpdates();
+            requestLocationUpdates(passedPermission);
         }
     }
 
 
     public void onPause() {
-        mStartStopSensorListenerUseCase.unregisterListenerForVectorRotationSensor();
+        mManageSensorListenerUseCase.unregisterListenerForVectorRotationSensor();
         if (isRequestingLocationUpdates) {
             stopLocationUpdates();
         }
     }
 
-    private void requestLocationUpdates() {
+    private void requestLocationUpdates(boolean passedPermission) {
         isRequestingLocationUpdates = true;
-        mRequestAndStopLocationUpdatesUseCase.requestLocationUpdates();
+        mRequestAndStopLocationUpdatesUseCase.requestLocationUpdates(passedPermission);
     }
 
     private void stopLocationUpdates() {
@@ -202,14 +212,14 @@ public class MainViewModel extends ViewModel {
         isRequestingLocationUpdates = false;
     }
 
-    private void initiateAndKeepUpdatingLocation() {
+    private void initiateAndKeepUpdatingLocation(boolean passedPermission) {
         hasLocationRequestsPermission = true;
-        mInitiateLastLocationUseCase.initiateLastLocation();
-        requestLocationUpdates();
+        mInitiateLastLocationUseCase.initiateLastLocation(passedPermission);
+        requestLocationUpdates(passedPermission);
     }
 
     public void newButtonClicked(boolean permissionGranted, boolean shouldProvideRationale, String sLat, String sLon) {
-        if (permissionGranted) findButtonClicked(sLat, sLon);
+        if (permissionGranted) findButtonClicked(permissionGranted, sLat, sLon);
         else if (shouldProvideRationale) mShouldProvideRationale.setValue(true);
         else mRequestLocationPermission.setValue(true);
 
@@ -217,7 +227,7 @@ public class MainViewModel extends ViewModel {
 
     public void onRequestPermissionCallback(Boolean isGranted, String sLat, String sLog) {
         if (isGranted) {
-            findButtonClicked(sLat, sLog);
+            findButtonClicked(isGranted, sLat, sLog);
         } else {
             mShowPermissionDenied.setValue(true);
         }

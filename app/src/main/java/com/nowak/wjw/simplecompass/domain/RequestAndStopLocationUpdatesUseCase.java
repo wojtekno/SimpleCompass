@@ -12,9 +12,9 @@ public class RequestAndStopLocationUpdatesUseCase {
         this.mLocationApiHandler = locationApiHandler;
     }
 
-    public void requestLocationUpdates() {
+    public void requestLocationUpdates(boolean passedPermission) {
         Timber.d("startLocationUpdates()");
-        mLocationApiHandler.requestLocationUpdates();
+        mLocationApiHandler.requestLocationUpdates(passedPermission);
     }
 
     public void stopLocationUpdates() {

@@ -34,16 +34,6 @@ public class MainFragment extends Fragment {
                 String latS = mBinding.latitudeEt.getText().toString();
                 String logS = mBinding.longtidudeEt.getText().toString();
                 mViewModel.onRequestPermissionCallback(isGranted, latS, logS);
-
-
-//                if (isGranted) {
-//                    Timber.d("RequestPermission granted");
-//                    btnClickAllowed();
-//                } else {
-//                    Timber.d("RequestPermission NOT granted");
-//                    Snackbar.make(mBinding.main, R.string.location_access_denied,
-//                            Snackbar.LENGTH_LONG).show();
-//                }
             });
 
     public static MainFragment newInstance() {
@@ -58,7 +48,6 @@ public class MainFragment extends Fragment {
         mBinding = DataBindingUtil.inflate(inflater, R.layout.main_fragment, container, false);
         mBinding.setLifecycleOwner(getViewLifecycleOwner());
 
-        updateValuesFromBundle(savedInstanceState);
         MainViewModelFactory mainViewModelFactory = ((MyApplication) getActivity().getApplication()).appContainer.mainViewModelFactory();
         mViewModel = new ViewModelProvider(this, mainViewModelFactory).get(MainViewModel.class);
         mBinding.setViewModel(mViewModel);
@@ -71,13 +60,6 @@ public class MainFragment extends Fragment {
             boolean shouldProvideRationale = shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION);
 
             mViewModel.newButtonClicked(hasPermissions, shouldProvideRationale, latS, logS);
-
-//            if (checkPermissions()) {
-//                Timber.d("button clicked & permission had been granted");
-//                btnClickAllowed();
-//            } else {
-//                requestPermissions();
-//            }
         });
 
         return mBinding.getRoot();
@@ -124,15 +106,18 @@ public class MainFragment extends Fragment {
         });
     }
 
+
     private void requestLocationPermission() {
         requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION);
     }
+
 
     private void hideKeyboard() {
         // todo You tend to use `getContext()` which may lead to `NullPointerException`. The `requireContext()` method would provide a better insight into what happened in such case.
         InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Activity.INPUT_METHOD_SERVICE);
         imm.hideSoftInputFromWindow(getView().getRootView().getWindowToken(), 0);
     }
+
 
     private boolean checkPermissions() {
         return ContextCompat.checkSelfPermission(
@@ -146,8 +131,9 @@ public class MainFragment extends Fragment {
     public void onResume() {
         super.onResume();
         Timber.d("onResume()");
-        mViewModel.onResume();
+        mViewModel.onResume(checkPermissions());
     }
+
 
     @Override
     public void onPause() {
@@ -155,42 +141,5 @@ public class MainFragment extends Fragment {
         Timber.d("onPause()");
         mViewModel.onPause();
     }
-
-    @Override
-    public void onSaveInstanceState(@NonNull Bundle outState) {
-//        outState.putBoolean(REQUESTING_LOCATION_UPDATES_KEY, isRequestingLocationUpdates);
-        super.onSaveInstanceState(outState);
-    }
-
-    private void updateValuesFromBundle(Bundle savedInstanceState) {
-        if (savedInstanceState == null) {
-            return;
-        }
-    }
-
-
-    //    private void requestPermissions() {
-//        boolean shouldProvideRationale = shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION);
-//
-//        if (shouldProvideRationale) {
-//            Timber.d("button clicked shouldShowRequestPermissionRationale");
-//            Snackbar.make(mBinding.main, R.string.location_access_required,
-//                    Snackbar.LENGTH_LONG).setAction(R.string.ok_button, new View.OnClickListener() {
-//                @Override
-//                public void onClick(View view) {
-//                    requestLocationPermission();
-//                }
-//            }).show();
-//        } else {
-//            requestLocationPermission();
-//        }
-//
-//    }
-
-//    private void btnClickAllowed() {
-//        String latS = mBinding.latitudeEt.getText().toString();
-//        String logS = mBinding.longtidudeEt.getText().toString();
-//        mViewModel.findButtonClicked(latS, logS);
-//    }
 
 }

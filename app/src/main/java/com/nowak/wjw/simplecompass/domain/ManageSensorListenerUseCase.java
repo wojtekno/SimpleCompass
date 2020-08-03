@@ -2,11 +2,11 @@ package com.nowak.wjw.simplecompass.domain;
 
 import com.nowak.wjw.simplecompass.data.sensors.SensorHandler;
 
-public class StartStopSensorListenerUseCase {
+public class ManageSensorListenerUseCase {
 
     private SensorHandler mSensorHandler;
 
-    public StartStopSensorListenerUseCase(SensorHandler sensorHandler) {
+    public ManageSensorListenerUseCase(SensorHandler sensorHandler) {
         mSensorHandler = sensorHandler;
     }
 
